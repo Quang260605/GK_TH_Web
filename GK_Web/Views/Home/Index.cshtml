@@ -1,0 +1,317 @@
+@{
+    ViewData["Title"] = "Trang Chủ - Danh Sách Học Phần";
+}
+
+<!-- Hero Banner -->
+<div class="hero-section text-center mb-5 animate-fade-in">
+    <div class="hero-overlay"></div>
+    <div class="hero-content py-5">
+        <h1 class="display-4 fw-bold text-white mb-3">Chào Mừng Đến Với Course Registration</h1>
+        <p class="lead text-white-50 max-w-2xl mx-auto px-3">
+            Hệ thống đăng ký học phần trực tuyến hiện đại. Khám phá các khóa học hấp dẫn và quản lý lộ trình học tập của bạn một cách tối ưu.
+        </p>
+    </div>
+</div>
+
+<!-- Search & Filter Section -->
+<div class="filter-panel p-4 mb-4 rounded-4 shadow-sm animate-slide-up">
+    <h4 class="mb-3 fw-bold text-primary-custom"><i class="fa fa-filter me-2"></i> Bộ lọc dữ liệu thông minh</h4>
+    <form id="filter-form" onsubmit="event.preventDefault();">
+        <div class="row g-3">
+            <!-- Search Bar -->
+            <div class="col-md-5">
+                <label for="searchTerm" class="form-label-custom">Tìm kiếm theo tên</label>
+                <div class="input-wrapper">
+                    <i class="fa fa-magnifying-glass input-icon"></i>
+                    <input type="text" id="searchTerm" name="searchTerm" class="form-control-custom" placeholder="Nhập tên môn học cần tìm..." autocomplete="off" />
+                </div>
+            </div>
+
+            <!-- Category Filter -->
+            <div class="col-md-4">
+                <label for="categoryId" class="form-label-custom">Danh mục học phần</label>
+                <div class="input-wrapper">
+                    <i class="fa fa-folder-open input-icon"></i>
+                    <select id="categoryId" name="categoryId" class="form-control-custom">
+                        <option value="">Tất cả danh mục</option>
+                        @if (ViewBag.Categories != null)
+                        {
+                            foreach (var cat in ViewBag.Categories)
+                            {
+                                <option value="@cat.Id">@cat.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <!-- Credits Filter -->
+            <div class="col-md-3">
+                <label for="credits" class="form-label-custom">Số tín chỉ</label>
+                <div class="input-wrapper">
+                    <i class="fa fa-graduation-cap input-icon"></i>
+                    <select id="credits" name="credits" class="form-control-custom">
+                        <option value="">Tất cả tín chỉ</option>
+                        <option value="1">1 Tín chỉ</option>
+                        <option value="2">2 Tín chỉ</option>
+                        <option value="3">3 Tín chỉ</option>
+                        <option value="4">4 Tín chỉ</option>
+                        <option value="5">5 Tín chỉ</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Dynamic Course List Area -->
+<div id="course-list-container" class="position-relative min-vh-20 animate-fade-in">
+    <!-- Loaded dynamically via AJAX -->
+    <div class="d-flex justify-content-center align-items-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Đang tải...</span>
+        </div>
+    </div>
+</div>
+<!-- Course Detail Modal -->
+<div class="modal fade" id="courseDetailModal" tabindex="-1" aria-labelledby="courseDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-primary-custom" id="courseDetailModalLabel">Chi tiết học phần</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-3 text-center">
+                <div class="mb-3 d-flex justify-content-center">
+                    <div id="modalCourseImageContainer" class="rounded-4 overflow-hidden shadow-sm" style="width: 140px; height: 140px; background-color: #f1f5f9;">
+                        <img id="modalCourseImage" src="" class="w-100 h-100 object-fit-cover" alt="" onerror="this.style.display='none'; document.getElementById('modalCourseInitials').classList.remove('d-none');">
+                        <div id="modalCourseInitials" class="w-100 h-100 d-flex align-items-center justify-content-center font-bold fs-3 text-primary-custom d-none">
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+                <h4 id="modalCourseName" class="fw-bold text-dark mb-1"></h4>
+                <span id="modalCourseCategory" class="badge bg-light text-primary border px-2.5 py-1.5 rounded-pill fs-xs mb-3"></span>
+                
+                <div class="card bg-light border-0 rounded-4 p-3 mb-3 text-start">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted"><i class="fa fa-graduation-cap me-2 text-primary-custom"></i>Số tín chỉ:</span>
+                        <strong id="modalCourseCredits" class="text-dark"></strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted"><i class="fa fa-chalkboard-user me-2 text-primary-custom"></i>Giảng viên:</span>
+                        <strong id="modalCourseLecturer" class="text-primary-custom"></strong>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-secondary w-100 rounded-3 py-2" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let searchTimeout = null;
+        let currentPage = 1;
+
+        // Load courses from query parameters or default
+        function loadCourses(pageNumber = 1, preventPushState = false) {
+            currentPage = pageNumber;
+            const container = document.getElementById('course-list-container');
+            
+            // Show modern skeleton loader cards
+            container.innerHTML = `
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4">
+                    ${[1, 2, 3].map(() => `
+                        <div class="col">
+                            <div class="skeleton-card shadow-sm border">
+                                <div class="skeleton-img skeleton-pulse"></div>
+                                <div class="skeleton-body">
+                                    <div class="skeleton-text title skeleton-pulse"></div>
+                                    <div class="skeleton-text skeleton-pulse"></div>
+                                    <div class="skeleton-text short skeleton-pulse"></div>
+                                    <div class="skeleton-text btn skeleton-pulse"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            const searchTerm = document.getElementById('searchTerm').value;
+            const categoryId = document.getElementById('categoryId').value;
+            const credits = document.getElementById('credits').value;
+
+            // Build URL
+            let url = `@Url.Action("GetCourses", "Home")?searchTerm=${encodeURIComponent(searchTerm)}&categoryId=${categoryId}&credits=${credits}&pageNumber=${pageNumber}`;
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.text();
+                })
+                .then(html => {
+                    container.innerHTML = html;
+                    
+                    if (!preventPushState) {
+                        // Sync Browser URL parameters without full page reload
+                        const browserUrl = `@Url.Action("Index", "Home")?searchTerm=${encodeURIComponent(searchTerm)}&categoryId=${categoryId}&credits=${credits}&pageNumber=${pageNumber}`;
+                        window.history.pushState({ pageNumber, searchTerm, categoryId, credits }, "", browserUrl);
+                    }
+                })
+                .catch(error => {
+                    console.error('Lỗi khi tải danh sách học phần:', error);
+                    container.innerHTML = `
+                        <div class="alert alert-danger-custom text-center my-5">
+                            <i class="fa fa-triangle-exclamation fa-2x mb-3"></i>
+                            <p class="mb-0">Có lỗi xảy ra khi kết nối máy chủ. Vui lòng tải lại trang.</p>
+                        </div>`;
+                });
+        }
+
+        // Show course detail modal
+        function showCourseDetails(course, event) {
+            // If clicking on action buttons area, do not open detail modal
+            if (event.target.closest('.mt-auto')) {
+                return;
+            }
+
+            document.getElementById('modalCourseName').textContent = course.name;
+            document.getElementById('modalCourseLecturer').textContent = course.lecturer;
+            document.getElementById('modalCourseCredits').textContent = course.credits + ' tín chỉ';
+            document.getElementById('modalCourseCategory').textContent = course.category;
+
+            const img = document.getElementById('modalCourseImage');
+            const initials = document.getElementById('modalCourseInitials');
+
+            if (course.image && course.image.trim() !== '') {
+                img.src = course.image;
+                img.style.display = 'block';
+                initials.classList.add('d-none');
+            } else {
+                img.style.display = 'none';
+                initials.classList.remove('d-none');
+                initials.querySelector('span').textContent = course.abbreviation;
+            }
+
+            const modalEl = document.getElementById('courseDetailModal');
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        }
+
+        // Toggle Student course enrollment via AJAX
+        function toggleEnroll(buttonElement, courseId, enroll) {
+            if (!buttonElement) return;
+
+            const originalHtml = buttonElement.innerHTML;
+            const originalClass = buttonElement.className;
+
+            // Disable button and show loading spinner
+            buttonElement.disabled = true;
+            buttonElement.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> ${enroll ? 'Đang đăng ký...' : 'Đang hủy...'}`;
+
+            const url = enroll ? '@Url.Action("Enroll", "Enrollment")' : '@Url.Action("Cancel", "Enrollment")';
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                },
+                body: JSON.stringify({ courseId: courseId })
+            })
+            .then(response => {
+                if (response.status === 401) {
+                    window.location.href = '@Url.Action("Login", "Account")';
+                    return null;
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!data) return;
+                
+                if (data.success) {
+                    // Update state inline dynamically
+                    if (enroll) {
+                        buttonElement.className = "btn-danger-custom w-100";
+                        buttonElement.innerHTML = `<i class="fa fa-circle-xmark me-1"></i> Hủy đăng ký`;
+                        buttonElement.onclick = function(e) {
+                            e.stopPropagation();
+                            toggleEnroll(buttonElement, courseId, false);
+                        };
+                    } else {
+                        buttonElement.className = "btn-primary-custom w-100";
+                        buttonElement.innerHTML = `<i class="fa fa-circle-plus me-1"></i> Đăng ký học phần`;
+                        buttonElement.onclick = function(e) {
+                            e.stopPropagation();
+                            toggleEnroll(buttonElement, courseId, true);
+                        };
+                    }
+                    buttonElement.disabled = false;
+                    showNotification(data.message, 'success');
+                } else {
+                    buttonElement.disabled = false;
+                    buttonElement.className = originalClass;
+                    buttonElement.innerHTML = originalHtml;
+                    showNotification(data.message || 'Thao tác thất bại.', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi khi thực hiện đăng ký/hủy đăng ký:', error);
+                buttonElement.disabled = false;
+                buttonElement.className = originalClass;
+                buttonElement.innerHTML = originalHtml;
+                showNotification('Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.', 'danger');
+            });
+        }
+
+        // Initialize and bind events
+        document.addEventListener('DOMContentLoaded', function () {
+            // Read initial query params from window location
+            const params = new URLSearchParams(window.location.search);
+            const searchTerm = params.get('searchTerm') || '';
+            const categoryId = params.get('categoryId') || '';
+            const credits = params.get('credits') || '';
+            let initialPage = params.has('pageNumber') ? parseInt(params.get('pageNumber')) : 1;
+
+            document.getElementById('searchTerm').value = searchTerm;
+            document.getElementById('categoryId').value = categoryId;
+            document.getElementById('credits').value = credits;
+            
+            // Set the initial history state with current values
+            window.history.replaceState({ pageNumber: initialPage, searchTerm, categoryId, credits }, "", window.location.href);
+
+            loadCourses(initialPage, true);
+
+            // Bind change events to filters
+            document.getElementById('categoryId').addEventListener('change', () => loadCourses(1));
+            document.getElementById('credits').addEventListener('change', () => loadCourses(1));
+
+            // Bind input event to search term (with debounce 300ms)
+            document.getElementById('searchTerm').addEventListener('input', function () {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    loadCourses(1);
+                }, 300);
+            });
+        });
+
+        // Listen for history popstate (e.g. user clicks browser back/forward buttons)
+        window.addEventListener('popstate', function (event) {
+            if (event.state) {
+                document.getElementById('searchTerm').value = event.state.searchTerm || '';
+                document.getElementById('categoryId').value = event.state.categoryId || '';
+                document.getElementById('credits').value = event.state.credits || '';
+                loadCourses(event.state.pageNumber || 1, true);
+            } else {
+                // Load default
+                document.getElementById('searchTerm').value = '';
+                document.getElementById('categoryId').value = '';
+                document.getElementById('credits').value = '';
+                loadCourses(1, true);
+            }
+        });
+    </script>
+}

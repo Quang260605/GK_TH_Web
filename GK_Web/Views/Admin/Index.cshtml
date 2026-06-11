@@ -1,0 +1,91 @@
+@model IEnumerable<GK_Web.Models.Course>
+@{
+    ViewData["Title"] = "Quản Lý Học Phần";
+}
+
+<div class="container py-4 animate-fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="fw-bold text-primary-custom mb-1"><i class="fa fa-list-check me-2"></i> Quản lý học phần</h2>
+            <p class="text-muted mb-0">Thêm, sửa, xóa học phần trên toàn hệ thống</p>
+        </div>
+        <a asp-action="Create" class="btn-primary-custom">
+            <i class="fa fa-circle-plus me-1"></i> Thêm Học Phần Mới
+        </a>
+    </div>
+
+    <!-- Courses List Grid -->
+    <div class="card rounded-4 border shadow-sm bg-white overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4" style="width: 80px;">Hình ảnh</th>
+                        <th>Tên học phần</th>
+                        <th>Danh mục</th>
+                        <th class="text-center">Số tín chỉ</th>
+                        <th>Giảng viên</th>
+                        <th class="text-end pe-4" style="width: 200px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <i class="fa fa-circle-exclamation fa-2x mb-2 d-block"></i>
+                                Chưa có học phần nào được tạo.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var course in Model)
+                        {
+                            <tr>
+                                <td class="ps-4">
+                                    @if (!string.IsNullOrEmpty(course.Image))
+                                    {
+                                        <img src="@course.Image" alt="@course.Name" class="rounded border" style="width: 50px; height: 50px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.classList.remove('d-none');" />
+                                        <div class="bg-primary text-white d-flex align-items-center justify-content-center rounded border d-none" style="width: 50px; height: 50px; font-weight: bold; font-size: 14px;">
+                                            @course.GetAbbreviation()
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="bg-primary text-white d-flex align-items-center justify-content-center rounded border" style="width: 50px; height: 50px; font-weight: bold; font-size: 14px;">
+                                            @course.GetAbbreviation()
+                                        </div>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark">@course.Name</div>
+                                    <span class="fs-xs text-muted">ID: @course.Id</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-primary border px-2.5 py-1.5 rounded-pill fs-xs">
+                                        @course.Category?.Name
+                                    </span>
+                                </td>
+                                <td class="text-center fw-semibold">@course.Credits</td>
+                                <td>@course.Lecturer</td>
+                                <td class="text-end pe-4">
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <a asp-action="Edit" asp-route-id="@course.Id" class="btn btn-sm btn-outline-primary rounded-3 px-3">
+                                            <i class="fa fa-pen-to-square me-1"></i> Sửa
+                                        </a>
+                                        <form asp-action="Delete" asp-route-id="@course.Id" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa học phần này không? Điều này sẽ xóa tất cả thông tin đăng ký liên quan!');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-3 px-3">
+                                                <i class="fa fa-trash-can me-1"></i> Xóa
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

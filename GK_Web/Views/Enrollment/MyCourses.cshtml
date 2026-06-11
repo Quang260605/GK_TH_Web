@@ -1,0 +1,182 @@
+@model IEnumerable<GK_Web.Models.Enrollment>
+@{
+    ViewData["Title"] = "Học Phần Của Tôi";
+    var totalCredits = Model.Sum(e => e.Course?.Credits ?? 0);
+}
+
+<div class="container py-4 animate-fade-in">
+    <!-- Header Summary Card -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="filter-panel p-4 rounded-4 shadow-sm bg-white d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                    <h2 class="fw-bold text-primary-custom mb-1"><i class="fa fa-book-bookmark me-2"></i> Học phần đã đăng ký</h2>
+                    <p class="text-muted mb-0">Danh sách các học phần bạn đã lựa chọn đăng ký trong học kỳ này</p>
+                </div>
+                <div class="d-flex gap-3">
+                    <div class="stat-badge px-4 py-2 bg-light-primary rounded-3 text-center border">
+                        <span class="d-block text-muted fs-xs text-uppercase fw-bold">Tổng số môn</span>
+                        <strong class="fs-4 text-primary-custom" id="total-courses-count">@Model.Count()</strong>
+                    </div>
+                    <div class="stat-badge px-4 py-2 bg-light-success rounded-3 text-center border">
+                        <span class="d-block text-muted fs-xs text-uppercase fw-bold">Tổng số tín chỉ</span>
+                        <strong class="fs-4 text-success" id="total-credits-count">@totalCredits</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Courses Table / Card -->
+    <div class="card rounded-4 border shadow-sm bg-white overflow-hidden">
+        @if (!Model.Any())
+        {
+            <div class="text-center py-5 px-3" id="no-courses-alert">
+                <i class="fa fa-folder-open fa-3x text-muted mb-3"></i>
+                <h5 class="fw-bold text-dark">Bạn chưa đăng ký học phần nào</h5>
+                <p class="text-muted mb-4">Hãy tham khảo danh sách môn học của chúng tôi để bắt đầu đăng ký.</p>
+                <a asp-controller="Home" asp-action="Index" class="btn-primary-custom d-inline-block px-4">
+                    <i class="fa fa-arrow-left me-2"></i> Đến Trang Học Phần
+                </a>
+            </div>
+            
+            <div class="table-responsive d-none" id="courses-table-wrapper">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Tên học phần</th>
+                            <th>Danh mục</th>
+                            <th class="text-center">Số tín chỉ</th>
+                            <th>Giảng viên</th>
+                            <th>Ngày đăng ký</th>
+                            <th class="text-end pe-4">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="enrolled-courses-list"></tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5 px-3 d-none" id="no-courses-alert">
+                <i class="fa fa-folder-open fa-3x text-muted mb-3"></i>
+                <h5 class="fw-bold text-dark">Bạn chưa đăng ký học phần nào</h5>
+                <p class="text-muted mb-4">Hãy tham khảo danh sách môn học của chúng tôi để bắt đầu đăng ký.</p>
+                <a asp-controller="Home" asp-action="Index" class="btn-primary-custom d-inline-block px-4">
+                    <i class="fa fa-arrow-left me-2"></i> Đến Trang Học Phần
+                </a>
+            </div>
+
+            <div class="table-responsive" id="courses-table-wrapper">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Tên học phần</th>
+                            <th>Danh mục</th>
+                            <th class="text-center">Số tín chỉ</th>
+                            <th>Giảng viên</th>
+                            <th>Ngày đăng ký</th>
+                            <th class="text-end pe-4">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="enrolled-courses-list">
+                        @foreach (var enrollment in Model)
+                        {
+                            <tr id="row-enrollment-@enrollment.CourseId" class="animate-fade-in">
+                                <td class="ps-4">
+                                    <div class="fw-bold text-dark">@enrollment.Course?.Name</div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-primary border px-2.5 py-1.5 rounded-pill fs-xs">
+                                        @enrollment.Course?.Category?.Name
+                                    </span>
+                                </td>
+                                <td class="text-center fw-semibold text-secondary">
+                                    <span class="course-credits-value">@enrollment.Course?.Credits</span>
+                                </td>
+                                <td>@enrollment.Course?.Lecturer</td>
+                                <td class="text-muted fs-sm">@enrollment.EnrollDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td class="text-end pe-4">
+                                    <button class="btn-danger-custom btn-sm" onclick="cancelEnrollment(@enrollment.CourseId)">
+                                        <i class="fa fa-circle-xmark me-1"></i> Hủy đăng ký
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- AJAX Cancellation Script -->
+@section Scripts {
+    <script>
+        function cancelEnrollment(courseId) {
+            if (!confirm('Bạn có chắc chắn muốn hủy đăng ký học phần này không?')) {
+                return;
+            }
+
+            const url = '@Url.Action("Cancel", "Enrollment")';
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                },
+                body: JSON.stringify({ courseId: courseId })
+            })
+            .then(response => {
+                if (response.status === 401) {
+                    window.location.href = '@Url.Action("Login", "Account")';
+                    return null;
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!data) return;
+
+                if (data.success) {
+                    // Smoothly animate and remove row
+                    const row = document.getElementById(`row-enrollment-${courseId}`);
+                    if (row) {
+                        row.style.transition = 'all 0.5s ease';
+                        row.style.opacity = '0';
+                        row.style.transform = 'translateX(-20px)';
+                        
+                        setTimeout(() => {
+                            // Extract credit value to update sum
+                            const creditVal = parseInt(row.querySelector('.course-credits-value').textContent);
+                            
+                            row.remove();
+                            
+                            // Update total count
+                            const countEl = document.getElementById('total-courses-count');
+                            let currentCount = parseInt(countEl.textContent) - 1;
+                            countEl.textContent = currentCount;
+
+                            // Update credits count
+                            const creditsEl = document.getElementById('total-credits-count');
+                            let currentCredits = parseInt(creditsEl.textContent) - creditVal;
+                            creditsEl.textContent = currentCredits;
+
+                            // If no courses left, toggle tables
+                            if (currentCount === 0) {
+                                document.getElementById('courses-table-wrapper').classList.add('d-none');
+                                document.getElementById('no-courses-alert').classList.remove('d-none');
+                            }
+                        }, 500);
+                    }
+                } else {
+                    alert(data.message || 'Hủy đăng ký thất bại.');
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi khi hủy đăng ký học phần:', error);
+                alert('Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau.');
+            });
+        }
+    </script>
+}

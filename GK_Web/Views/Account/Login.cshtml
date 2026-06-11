@@ -1,0 +1,81 @@
+@model GK_Web.Models.LoginViewModel
+@{
+    ViewData["Title"] = "Đăng Nhập";
+}
+
+<div class="auth-container">
+    <div class="auth-card animate-fade-in">
+        <div class="auth-header">
+            <h2>Đăng Nhập</h2>
+            <p>Nhập thông tin tài khoản hoặc sử dụng liên kết ngoài</p>
+        </div>
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger-custom mb-3">
+                <i class="fa fa-circle-exclamation me-2"></i> @TempData["ErrorMessage"]
+            </div>
+        }
+
+        <form asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger-custom mb-3"></div>
+
+            <div class="form-group mb-3">
+                <label asp-for="EmailOrUsername" class="form-label-custom"></label>
+                <div class="input-wrapper">
+                    <i class="fa fa-user input-icon"></i>
+                    <input asp-for="EmailOrUsername" class="form-control-custom" placeholder="Tên đăng nhập hoặc email..." autocomplete="username" />
+                </div>
+                <span asp-validation-for="EmailOrUsername" class="text-danger-custom fs-sm"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Password" class="form-label-custom"></label>
+                <div class="input-wrapper">
+                    <i class="fa fa-lock input-icon"></i>
+                    <input asp-for="Password" type="password" class="form-control-custom" placeholder="••••••••" autocomplete="current-password" />
+                </div>
+                <span asp-validation-for="Password" class="text-danger-custom fs-sm"></span>
+            </div>
+
+            <div class="form-check mb-4 d-flex align-items-center">
+                <input asp-for="RememberMe" class="form-check-input-custom me-2" />
+                <label asp-for="RememberMe" class="form-check-label-custom"></label>
+            </div>
+
+            <button type="submit" class="btn-primary-custom w-100 mb-3">
+                <i class="fa fa-right-to-bracket me-2"></i> Đăng Nhập
+            </button>
+        </form>
+
+        <div class="divider">
+            <span>HOẶC</span>
+        </div>
+
+        <!-- Google login integration -->
+        <form asp-action="ExternalLogin" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post" class="mb-3">
+            <button type="submit" name="provider" value="Google" class="btn-google-custom w-100">
+                <i class="fab fa-google me-2"></i> Đăng nhập bằng Google
+            </button>
+        </form>
+
+        <!-- Mock Login Developer Option -->
+        <div class="mock-login-section p-3 rounded mb-3 text-center" style="background: rgba(var(--primary-rgb), 0.05); border: 1px dashed var(--primary-color);">
+            <span class="badge bg-warning text-dark mb-2"><i class="fa fa-bug"></i> Developer Testing</span>
+            <p class="fs-xs text-muted mb-2">Sử dụng tài khoản Mock Google để chấm điểm nhanh (Không cần cấu hình Google Console)</p>
+            <form asp-action="MockGoogleLogin" method="post">
+                <button type="submit" class="btn-secondary-custom btn-sm w-100">
+                    <i class="fa fa-user-ninja me-2"></i> Đăng nhập nhanh Google (Mock)
+                </button>
+            </form>
+        </div>
+
+        <div class="auth-footer text-center">
+            <p>Chưa có tài khoản? <a asp-action="Register" class="auth-link">Đăng ký ngay</a></p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

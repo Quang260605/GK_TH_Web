@@ -1,0 +1,65 @@
+@model GK_Web.Models.RegisterViewModel
+@{
+    ViewData["Title"] = "Đăng Ký Tài Khoản";
+}
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h2>Đăng Ký Học Viên</h2>
+            <p>Tạo tài khoản để bắt đầu đăng ký học phần</p>
+        </div>
+
+        <form asp-action="Register" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger-custom mb-3"></div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Username" class="form-label-custom"></label>
+                <div class="input-wrapper">
+                    <i class="fa fa-user input-icon"></i>
+                    <input asp-for="Username" class="form-control-custom" placeholder="Tên đăng nhập..." autocomplete="username" />
+                </div>
+                <span asp-validation-for="Username" class="text-danger-custom fs-sm"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Email" class="form-label-custom"></label>
+                <div class="input-wrapper">
+                    <i class="fa fa-envelope input-icon"></i>
+                    <input asp-for="Email" class="form-control-custom" placeholder="example@domain.com" autocomplete="email" />
+                </div>
+                <span asp-validation-for="Email" class="text-danger-custom fs-sm"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Password" class="form-label-custom"></label>
+                <div class="input-wrapper">
+                    <i class="fa fa-lock input-icon"></i>
+                    <input asp-for="Password" type="password" class="form-control-custom" placeholder="••••••••" autocomplete="new-password" />
+                </div>
+                <span asp-validation-for="Password" class="text-danger-custom fs-sm"></span>
+            </div>
+
+            <div class="form-group mb-4">
+                <label asp-for="ConfirmPassword" class="form-label-custom"></label>
+                <div class="input-wrapper">
+                    <i class="fa fa-shield-halved input-icon"></i>
+                    <input asp-for="ConfirmPassword" type="password" class="form-control-custom" placeholder="••••••••" autocomplete="new-password" />
+                </div>
+                <span asp-validation-for="ConfirmPassword" class="text-danger-custom fs-sm"></span>
+            </div>
+
+            <button type="submit" class="btn-primary-custom w-100 mb-3">
+                <i class="fa fa-user-plus me-2"></i> Đăng Ký
+            </button>
+        </form>
+
+        <div class="auth-footer text-center">
+            <p>Đã có tài khoản? <a asp-action="Login" class="auth-link">Đăng nhập ngay</a></p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

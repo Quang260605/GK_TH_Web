@@ -1,0 +1,148 @@
+@model GK_Web.Models.CourseListViewModel
+
+@if (!Model.Courses.Any())
+{
+    <div class="text-center py-5 rounded-4 shadow-sm bg-white border d-flex flex-column align-items-center">
+        <i class="fa fa-magnifying-glass-chart fa-3x text-muted mb-3"></i>
+        <h5 class="fw-bold text-dark">Không tìm thấy học phần nào</h5>
+        <p class="text-muted">Thử thay đổi từ khóa hoặc bộ lọc của bạn.</p>
+    </div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4">
+        @foreach (var course in Model.Courses)
+        {
+            var isEnrolled = Model.EnrolledCourseIds.Contains(course.Id);
+            <div class="col">
+                <div class="course-card h-100 rounded-4 shadow-sm border bg-white d-flex flex-column overflow-hidden"
+                     style="cursor: pointer;"
+                     onclick="showCourseDetails({
+                         name: '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(course.Name))',
+                         lecturer: '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(course.Lecturer))',
+                         credits: @course.Credits,
+                         category: '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(course.Category?.Name ?? ""))',
+                         image: '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(course.Image ?? ""))',
+                         abbreviation: '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(course.GetAbbreviation() ?? ""))'
+                     }, event)">
+                    <!-- Course Image -->
+                    <div class="course-img-wrapper position-relative">
+                        @if (!string.IsNullOrEmpty(course.Image))
+                        {
+                            <img src="@course.Image" class="course-img" alt="@course.Name" onerror="this.style.display='none'; this.nextElementSibling.classList.remove('d-none');">
+                            <div class="course-img-placeholder d-flex align-items-center justify-content-center font-bold d-none">
+                                <span>@course.GetAbbreviation()</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="course-img-placeholder d-flex align-items-center justify-content-center font-bold">
+                                <span>@course.GetAbbreviation()</span>
+                            </div>
+                        }
+                        <span class="course-badge-category position-absolute top-3 start-3">
+                            @course.Category?.Name
+                        </span>
+                    </div>
+
+                    <!-- Course Body -->
+                    <div class="course-body p-4 d-flex flex-column flex-grow-1">
+                        <h5 class="course-title fw-bold text-dark mb-2">@course.Name</h5>
+                        
+                        <div class="course-info-list mb-4">
+                            <div class="course-info-item text-muted mb-2">
+                                <i class="fa fa-graduation-cap me-2 text-primary-custom"></i>
+                                <span>Số tín chỉ: <strong>@course.Credits</strong></span>
+                            </div>
+                            <div class="course-info-item text-muted">
+                                <i class="fa fa-chalkboard-user me-2 text-primary-custom"></i>
+                                <span>Giảng viên: <strong>@course.Lecturer</strong></span>
+                            </div>
+                        </div>
+
+                        <!-- Course Action -->
+                        <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+                            @if (!User.Identity?.IsAuthenticated ?? true)
+                            {
+                                <a asp-controller="Account" asp-action="Login" class="btn-primary-custom w-100 text-center">
+                                    <i class="fa fa-right-to-bracket me-1"></i> Đăng ký học phần
+                                </a>
+                            }
+                            else if (User.IsInRole("Student"))
+                            {
+                                if (isEnrolled)
+                                {
+                                    <button class="btn-danger-custom w-100" onclick="event.stopPropagation(); toggleEnroll(this, @course.Id, false)">
+                                        <i class="fa fa-circle-xmark me-1"></i> Hủy đăng ký
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button class="btn-primary-custom w-100" onclick="event.stopPropagation(); toggleEnroll(this, @course.Id, true)">
+                                        <i class="fa fa-circle-plus me-1"></i> Đăng ký học phần
+                                    </button>
+                                }
+                            }
+                            else if (User.IsInRole("Admin"))
+                            {
+                                <button class="btn btn-secondary w-100" disabled>
+                                    <i class="fa fa-lock me-1"></i> Tài khoản Admin
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Pagination Footer (Question 1 & UX requirements) -->
+    @if (Model.TotalPages > 1)
+    {
+        <div class="d-flex justify-content-between align-items-center mt-5 pt-3 border-top flex-wrap gap-3">
+            <div class="text-muted fs-sm">
+                Hiển thị học phần từ <strong>@(((Model.PageNumber - 1) * 5) + 1)</strong> đến 
+                <strong>@(Math.Min(Model.PageNumber * 5, Model.TotalItems))</strong> của 
+                <strong>@Model.TotalItems</strong> học phần.
+            </div>
+            
+            <nav aria-label="Course list pagination">
+                <ul class="pagination-custom d-flex list-unstyled m-0 gap-1">
+                    <!-- First & Previous -->
+                    <li class="page-item-custom @(Model.PageNumber == 1 ? "disabled" : "")">
+                        <button onclick="loadCourses(1)" class="page-link-custom" aria-label="First page">
+                            <i class="fa fa-angles-left"></i>
+                        </button>
+                    </li>
+                    <li class="page-item-custom @(Model.PageNumber == 1 ? "disabled" : "")">
+                        <button onclick="loadCourses(@(Model.PageNumber - 1))" class="page-link-custom" aria-label="Previous page">
+                            <i class="fa fa-angle-left"></i>
+                        </button>
+                    </li>
+
+                    <!-- Page Numbers -->
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        var pageIndex = i;
+                        <li class="page-item-custom @(Model.PageNumber == pageIndex ? "active" : "")">
+                            <button onclick="loadCourses(@pageIndex)" class="page-link-custom">@pageIndex</button>
+                        </li>
+                    }
+
+                    <!-- Next & Last -->
+                    <li class="page-item-custom @(Model.PageNumber == Model.TotalPages ? "disabled" : "")">
+                        <button onclick="loadCourses(@(Model.PageNumber + 1))" class="page-link-custom" aria-label="Next page">
+                            <i class="fa fa-angle-right"></i>
+                        </button>
+                    </li>
+                    <li class="page-item-custom @(Model.PageNumber == Model.TotalPages ? "disabled" : "")">
+                        <button onclick="loadCourses(@Model.TotalPages)" class="page-link-custom" aria-label="Last page">
+                            <i class="fa fa-angles-right"></i>
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
+}
+

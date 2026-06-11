@@ -1,0 +1,201 @@
+@model GK_Web.Models.Course
+@{
+    ViewData["Title"] = "Chỉnh Sửa Học Phần";
+}
+
+<div class="container py-4 animate-fade-in">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <div class="d-flex align-items-center mb-4">
+                <a asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill me-3 px-3">
+                    <i class="fa fa-arrow-left me-1"></i> Quay lại
+                </a>
+                <div>
+                    <h2 class="fw-bold text-primary-custom mb-0">Chỉnh sửa học phần</h2>
+                    <p class="text-muted mb-0 fs-sm">Cập nhật thông tin học phần mã: <strong>@Model.Id</strong></p>
+                </div>
+            </div>
+
+            <div class="card rounded-4 border shadow-sm bg-white p-4">
+                <form asp-action="Edit" method="post" enctype="multipart/form-data">
+                    <div asp-validation-summary="ModelOnly" class="text-danger-custom mb-3"></div>
+                    
+                    <!-- Hidden inputs -->
+                    <input type="hidden" asp-for="Id" />
+                    <input type="hidden" asp-for="Image" />
+
+                    <div class="row">
+                        <!-- Left inputs -->
+                        <div class="col-md-7">
+                            <div class="form-group mb-3">
+                                <label asp-for="Name" class="form-label-custom"></label>
+                                <input asp-for="Name" class="form-control-custom" placeholder="Nhập tên học phần..." />
+                                <span asp-validation-for="Name" class="text-danger-custom fs-sm"></span>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label asp-for="CategoryId" class="form-label-custom"></label>
+                                <div class="d-flex gap-2">
+                                    <select asp-for="CategoryId" class="form-control-custom" asp-items="ViewBag.CategoryId">
+                                        <option value="">-- Chọn danh mục học phần --</option>
+                                    </select>
+                                    <button type="button" class="btn btn-outline-primary rounded-3 px-3 fw-bold" title="Thêm danh mục mới" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                                        <i class="fa fa-plus"></i>
+                                    </button>
+                                </div>
+                                <span asp-validation-for="CategoryId" class="text-danger-custom fs-sm"></span>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="form-group mb-3">
+                                        <label asp-for="Credits" class="form-label-custom"></label>
+                                        <input asp-for="Credits" type="number" class="form-control-custom" min="1" max="10" placeholder="Số tín chỉ..." />
+                                        <span asp-validation-for="Credits" class="text-danger-custom fs-sm"></span>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-group mb-3">
+                                        <label asp-for="Lecturer" class="form-label-custom"></label>
+                                        <input asp-for="Lecturer" class="form-control-custom" placeholder="Tên giảng viên..." />
+                                        <span asp-validation-for="Lecturer" class="text-danger-custom fs-sm"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right image input -->
+                        <div class="col-md-5 d-flex flex-column align-items-center justify-content-center border-start ps-md-4 mt-3 mt-md-0">
+                            <label class="form-label-custom w-100 text-center text-md-start mb-3">Ảnh minh họa</label>
+                            
+                            <div id="image-preview-container" class="rounded-3 border overflow-hidden mb-3 d-flex align-items-center justify-content-center bg-light" style="width: 180px; height: 180px;">
+                                @if (!string.IsNullOrEmpty(Model.Image))
+                                {
+                                    <i class="fa fa-image fa-3x text-muted d-none" id="preview-placeholder"></i>
+                                    <img id="preview-image" src="@Model.Image" alt="Xem trước" class="w-100 h-100 object-cover" onerror="this.onerror=null; this.src='/images/placeholder.jpg';" />
+                                }
+                                else
+                                {
+                                    <i class="fa fa-image fa-3x text-muted" id="preview-placeholder"></i>
+                                    <img id="preview-image" src="" alt="Xem trước" class="w-100 h-100 object-cover d-none" />
+                                }
+                            </div>
+
+                            <div class="w-100">
+                                <input type="file" name="imageFile" id="imageFile" class="form-control form-control-sm" accept="image/*" onchange="previewFile()" />
+                                <span class="fs-xs text-muted mt-1 d-block text-center">Tải tệp mới để thay thế ảnh cũ</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-top pt-3 mt-4 text-end">
+                        <a asp-action="Index" class="btn btn-secondary rounded-3 px-4 me-2">Hủy bỏ</a>
+                        <button type="submit" class="btn-primary-custom px-4">
+                            <i class="fa fa-save me-1"></i> Cập nhật
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Category Modal -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1" aria-labelledby="addCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-primary-custom" id="addCategoryModalLabel">Thêm danh mục mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="add-category-form" onsubmit="addCategory(event)">
+                <div class="modal-body pt-3">
+                    <div class="form-group mb-2">
+                        <label for="newCategoryName" class="form-label-custom mb-2">Tên danh mục</label>
+                        <input type="text" id="newCategoryName" class="form-control-custom" placeholder="Nhập tên danh mục..." required />
+                        <div id="add-category-error" class="text-danger-custom fs-xs mt-2 d-none"></div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-secondary rounded-3" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <button type="submit" class="btn-primary-custom">Xác nhận</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function previewFile() {
+            const preview = document.getElementById('preview-image');
+            const placeholder = document.getElementById('preview-placeholder');
+            const file = document.getElementById('imageFile').files[0];
+            const reader = new FileReader();
+
+            reader.addEventListener("load", function () {
+                preview.src = reader.result;
+                preview.classList.remove('d-none');
+                if (placeholder) {
+                    placeholder.classList.add('d-none');
+                }
+            }, false);
+
+            if (file) {
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function addCategory(event) {
+            event.preventDefault();
+            const input = document.getElementById('newCategoryName');
+            const name = input.value.trim();
+            if (!name) return;
+
+            const errorDiv = document.getElementById('add-category-error');
+            errorDiv.classList.add('d-none');
+            errorDiv.textContent = '';
+
+            fetch('@Url.Action("CreateCategory", "Admin")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                },
+                body: JSON.stringify({ name: name })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw new Error(err.message || 'Thao tác thất bại. Danh mục có thể đã tồn tại.') });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Find and append new option to CategoryId select
+                    const selectEl = document.getElementById('CategoryId');
+                    if (selectEl) {
+                        const opt = document.createElement('option');
+                        opt.value = data.id;
+                        opt.innerHTML = data.name;
+                        opt.selected = true;
+                        selectEl.appendChild(opt);
+                    }
+                    
+                    // Clear input
+                    input.value = '';
+                    
+                    // Hide Modal
+                    const modalEl = document.getElementById('addCategoryModal');
+                    const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                    modal.hide();
+                }
+            })
+            .catch(error => {
+                errorDiv.textContent = error.message;
+                errorDiv.classList.remove('d-none');
+            });
+        }
+    </script>
+}

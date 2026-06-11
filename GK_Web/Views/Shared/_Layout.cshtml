@@ -1,0 +1,174 @@
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<IdentityUser> SignInManager
+@inject UserManager<IdentityUser> UserManager
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Course Registration</title>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    
+    <!-- Custom site CSS -->
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/GK_Web.styles.css" asp-append-version="true" />
+</head>
+<body>
+    <!-- Anti Forgery Token for global Ajax use -->
+    @Html.AntiForgeryToken()
+
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-custom py-3">
+            <div class="container">
+                <!-- Brand logo -->
+                <a class="navbar-brand-custom d-flex align-items-center" asp-controller="Home" asp-action="Index">
+                    <span class="brand-icon-wrapper me-2">
+                        <i class="fa fa-graduation-cap"></i>
+                    </span>
+                    <span class="brand-text">Course<span class="brand-text-accent">Reg</span></span>
+                </a>
+                
+                <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 align-items-center-custom gap-1">
+                        <li class="nav-item">
+                            <a class="nav-link-custom @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")" asp-controller="Home" asp-action="Index">
+                                <i class="fa fa-house me-1"></i> Trang chủ
+                            </a>
+                        </li>
+                        
+                        @if (SignInManager.IsSignedIn(User))
+                        {
+                            if (User.IsInRole("Student"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link-custom @(ViewContext.RouteData.Values["controller"]?.ToString() == "Enrollment" ? "active" : "")" asp-controller="Enrollment" asp-action="MyCourses">
+                                        <i class="fa fa-book-bookmark me-1"></i> Học phần của tôi
+                                    </a>
+                                </li>
+                            }
+                            else if (User.IsInRole("Admin"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link-custom @(ViewContext.RouteData.Values["controller"]?.ToString() == "Admin" && ViewContext.RouteData.Values["action"]?.ToString() == "Dashboard" ? "active" : "")" asp-controller="Admin" asp-action="Dashboard">
+                                        <i class="fa fa-chart-line me-1"></i> Dashboard
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link-custom @(ViewContext.RouteData.Values["controller"]?.ToString() == "Admin" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")" asp-controller="Admin" asp-action="Index">
+                                        <i class="fa fa-list-check me-1"></i> Quản lý học phần
+                                    </a>
+                                </li>
+                            }
+                        }
+                    </ul>
+                    
+                    <div class="d-flex align-items-center gap-2">
+                        @if (SignInManager.IsSignedIn(User))
+                        {
+                            var user = await UserManager.GetUserAsync(User);
+                            var emailOrName = user?.Email ?? User.Identity?.Name;
+                            var roleText = User.IsInRole("Admin") ? "Admin" : "Sinh viên";
+                            var roleBg = User.IsInRole("Admin") ? "bg-danger" : "bg-primary";
+
+                            <div class="dropdown">
+                                <button class="btn btn-profile dropdown-toggle d-flex align-items-center gap-2" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <div class="avatar-circle">
+                                        @((emailOrName?.Length > 0 ? emailOrName.Substring(0, 1) : "U").ToUpper())
+                                    </div>
+                                    <div class="text-start d-none d-sm-block">
+                                        <span class="d-block fw-bold text-dark fs-xs">@emailOrName</span>
+                                        <span class="badge @roleBg text-white fs-xxs">@roleText</span>
+                                    </div>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end rounded-3 shadow-lg border mt-2" aria-labelledby="userDropdown">
+                                    @if (User.IsInRole("Student"))
+                                    {
+                                        <li>
+                                            <a class="dropdown-item py-2" asp-controller="Enrollment" asp-action="MyCourses">
+                                                <i class="fa fa-book me-2 text-muted"></i> Học phần của tôi
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                    }
+                                    else if (User.IsInRole("Admin"))
+                                    {
+                                        <li>
+                                            <a class="dropdown-item py-2" asp-controller="Admin" asp-action="Dashboard">
+                                                <i class="fa fa-chart-pie me-2 text-muted"></i> Bảng thống kê
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item py-2" asp-controller="Admin" asp-action="Index">
+                                                <i class="fa fa-gear me-2 text-muted"></i> Quản trị học phần
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                    }
+                                    <li>
+                                        <form class="form-inline" asp-controller="Account" asp-action="Logout" method="post">
+                                            <button type="submit" class="dropdown-item py-2 text-danger">
+                                                <i class="fa fa-right-from-bracket me-2"></i> Đăng xuất
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                        }
+                        else
+                        {
+                            <a asp-controller="Account" asp-action="Login" class="btn btn-login-custom">
+                                <i class="fa fa-right-to-bracket me-1"></i> Đăng nhập
+                            </a>
+                            <a asp-controller="Account" asp-action="Register" class="btn-primary-custom">
+                                <i class="fa fa-user-plus me-1"></i> Đăng ký
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+    
+    <div class="container main-content-wrapper">
+        <main role="main" class="pb-5">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="footer-custom mt-auto py-4 border-top">
+        <div class="container text-center">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="text-muted fs-sm">
+                    &copy; 2026 - <strong>CourseReg App</strong>. Hệ thống đăng ký học phần sinh viên.
+                </div>
+                <div class="d-flex gap-3 fs-sm">
+                    <a asp-controller="Home" asp-action="Index" class="text-decoration-none text-muted-hover">Danh sách môn</a>
+                    <span class="text-muted-light">|</span>
+                    <a asp-controller="Home" asp-action="Privacy" class="text-decoration-none text-muted-hover">Chính sách bảo mật</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
